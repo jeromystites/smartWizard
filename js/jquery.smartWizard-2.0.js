@@ -48,6 +48,11 @@
                 var ar = Array.prototype.slice.call(args, 1);
                 setError(ar[0].stepnum, ar[0].iserror);
                 return true;
+            } else if (action === 'gotoStep') {
+                elmStepContainer = $('.' + options.css_stepContainer_Class, obj);
+                var ar = Array.prototype.slice.call(args, 1);
+                LoadContent(ar - 1, 'directClick');
+                return true;
             } else {
                 $.error('Method ' + action + ' does not exist');
             }
@@ -82,20 +87,8 @@
                 elmActionBar.append(btNext).append(btPrevious);
                 contentWidth = elmStepContainer.width();
 
-                $(btNext).click(function () {
-                    if ($(this).hasClass(options.css_buttonDisabled_Class)) {
-                        return false;
-                    }
-                    doForwardProgress();
-                    return false;
-                });
-                $(btPrevious).click(function () {
-                    if ($(this).hasClass(options.css_buttonDisabled_Class)) {
-                        return false;
-                    }
-                    doBackwardProgress();
-                    return false;
-                });
+                $(btNext).click(nextClick);
+                $(btPrevious).click(previousClick);
                 $(btFinish).click(function () {
                     if (!$(this).hasClass(options.css_buttonDisabled_Class)) {
                         if ($.isFunction(options.onFinish)) {
@@ -121,7 +114,7 @@
                         var nextStepIdx = steps.index(this);
                         var isDone = steps.eq(nextStepIdx).attr("isDone") - 0;
                         if (isDone == 1) {
-                            LoadContent(nextStepIdx);
+                            LoadContent(nextStepIdx, 'directClick');
                         }
                         return false;
                     });
@@ -140,7 +133,30 @@
                 //  Prepare the steps
                 prepareSteps();
                 // Show the first slected step
-                LoadContent(curStepIdx);
+                LoadContent(curStepIdx, 'init');
+            }
+
+            function nextClick() {
+                var lastStepIdx = $("ul > li > a.selected[href^='#step-']", obj).attr('rel');
+                if (typeof lastStepIdx != 'undefined')
+                    curStepIdx = lastStepIdx - 1;
+
+                if ($(this).hasClass(options.css_buttonDisabled_Class)) {
+                    return false;
+                }
+                doForwardProgress();
+                return false;
+            }
+
+            function previousClick() {
+                var lastStepIdx = $("ul > li > a.selected[href^='#step-']", obj).attr('rel');
+                if (typeof lastStepIdx != 'undefined')
+                    curStepIdx = lastStepIdx - 1;
+                if ($(this).hasClass(options.css_buttonDisabled_Class)) {
+                    return false;
+                }
+                doBackwardProgress();
+                return false;
             }
 
             function prepareSteps() {
@@ -158,7 +174,7 @@
                 });
             }
 
-            function LoadContent(stepIdx) {
+            function LoadContent(stepIdx, trigger) {
                 var selStep = steps.eq(stepIdx);
                 var ajaxurl = options.contentURL;
                 var hasContent = selStep.data('hasContent');
@@ -179,22 +195,22 @@
                                 if (res && res.length > 0) {
                                     selStep.data('hasContent', true);
                                     $($(selStep, obj).attr("href"), obj).html(res);
-                                    showStep(stepIdx);
+                                    showStep(stepIdx, trigger);
                                 }
                             }
                         });
                     }
                 } else {
-                    showStep(stepIdx);
+                    showStep(stepIdx, trigger);
                 }
             }
 
-            function showStep(stepIdx) {
+            function showStep(stepIdx, trigger) {
                 var selStep = steps.eq(stepIdx);
                 var curStep = steps.eq(curStepIdx);
                 if (stepIdx != curStepIdx) {
                     if ($.isFunction(options.onLeaveStep)) {
-                        if (!options.onLeaveStep.call(this, $(curStep))) {
+                        if (!options.onLeaveStep.call(this, $(curStep), trigger)) {
                             return false;
                         }
                     }
@@ -205,13 +221,14 @@
                     $($(curStep, obj).attr("href"), obj).slideUp("fast", function (e) {
                         $($(selStep, obj).attr("href"), obj).slideDown("fast");
                         curStepIdx = stepIdx;
-                        SetupStep(curStep, selStep);
+                        SetupStep(curStep, selStep, trigger);
                     });
                 } else if (options.transitionEffect == 'fade') {
+                    var hr = $(curStep, obj).attr("href");
                     $($(curStep, obj).attr("href"), obj).fadeOut("fast", function (e) {
                         $($(selStep, obj).attr("href"), obj).fadeIn("fast");
                         curStepIdx = stepIdx;
-                        SetupStep(curStep, selStep);
+                        SetupStep(curStep, selStep, trigger);
                     });
                 } else if (options.transitionEffect == 'slideleft') {
                     var nextElmLeft = 0;
@@ -239,18 +256,18 @@
                     $($(selStep, obj).attr("href"), obj).show();
                     $($(selStep, obj).attr("href"), obj).animate({ left: nextElmLeft2 }, "fast", function (e) {
                         curStepIdx = stepIdx;
-                        SetupStep(curStep, selStep);
+                        SetupStep(curStep, selStep, trigger);
                     });
                 } else {
                     $($(curStep, obj).attr("href"), obj).hide();
                     $($(selStep, obj).attr("href"), obj).show();
                     curStepIdx = stepIdx;
-                    SetupStep(curStep, selStep);
+                    SetupStep(curStep, selStep, trigger);
                 }
                 return true;
             }
 
-            function SetupStep(curStep, selStep) {
+            function SetupStep(curStep, selStep, trigger) {
                 $(curStep, obj).removeClass(options.css_selected_Class);
                 $(curStep, obj).addClass(options.css_done_Class);
 
@@ -260,7 +277,7 @@
                 $(selStep, obj).attr("isDone", 1);
                 adjustButton();
                 if ($.isFunction(options.onShowStep)) {
-                    if (!options.onShowStep.call(this, $(selStep))) {
+                    if (!options.onShowStep.call(this, $(selStep), trigger)) {
                         return false;
                     }
                 }
@@ -274,7 +291,7 @@
                     }
                     nextStepIdx = 0;
                 }
-                LoadContent(nextStepIdx);
+                LoadContent(nextStepIdx, 'next');
             }
 
             function doBackwardProgress() {
@@ -285,7 +302,7 @@
                     }
                     nextStepIdx = steps.length - 1;
                 }
-                LoadContent(nextStepIdx);
+                LoadContent(nextStepIdx, 'previous');
             }
 
             function adjustButton() {
@@ -293,7 +310,7 @@
                     if (0 >= curStepIdx) {
                         $(btPrevious).addClass(options.css_buttonDisabled_Class);
                     } else {
-                        $(btPrevious).removeClass( options.css_buttonDisabled_Class);
+                        $(btPrevious).removeClass(options.css_buttonDisabled_Class);
                     }
                     if ((steps.length - 1) <= curStepIdx) {
                         $(btNext).addClass(options.css_buttonDisabled_Class);
@@ -310,7 +327,7 @@
             }
 
             function showMessage(msg) {
-                $('.'+options.css_content_Class, msgBox).html(msg);
+                $('.' + options.css_content_Class, msgBox).html(msg);
                 msgBox.show();
             }
 
@@ -360,7 +377,7 @@
         css_buttonDisabled_Class: 'buttonDisabled',
         css_error_Class: 'error',
         css_msgBox_Class: 'msgBox',
-        css_close_Class:'close'
+        css_close_Class: 'close'
     };
 
 })(jQuery);
