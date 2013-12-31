@@ -89,25 +89,14 @@
 
                 $(btNext).click(nextClick);
                 $(btPrevious).click(previousClick);
-                $(btFinish).click(function () {
-                    if (!$(this).hasClass(options.css_buttonDisabled_Class)) {
-                        if ($.isFunction(options.onFinish)) {
-                            if (!options.onFinish.call(this, $(steps))) {
-                                return false;
-                            }
-                        } else {
-                            var frm = obj.parents('form');
-                            if (frm && frm.length) {
-                                frm.submit();
-                            }
-                        }
-                    }
-
-                    return false;
-                });
+                $(btFinish).click(finishClick);
 
                 if (options.directClick == true) {
                     $(steps).bind("click", function (e) {
+                        var lastStepIdx = $("ul > li > a.selected[href^='#step-']", obj).attr('rel');
+                        if (typeof lastStepIdx != 'undefined')
+                            curStepIdx = lastStepIdx - 1;
+
                         if (steps.index(this) == curStepIdx) {
                             return false;
                         }
@@ -156,6 +145,34 @@
                     return false;
                 }
                 doBackwardProgress();
+                return false;
+            }
+
+            function finishClick() {
+                if (!$(this).hasClass(options.css_buttonDisabled_Class)) {
+                    // Call onLeaveStep event on Finish
+                    if ($.isFunction(options.onLeaveStep)) {
+                        curStepIdx = $("ul > li > a.selected[href^='#step-']", obj).attr('rel');
+                        if (typeof curStepIdx != 'undefined') {
+                            var curStep = steps.eq(curStepIdx - 1);
+                            if (!options.onLeaveStep.call(this, $(curStep), 'finish')) {
+                                return false;
+                            }
+                        }
+                    }
+
+                    if ($.isFunction(options.onFinish)) {
+                        if (!options.onFinish.call(this, $(steps))) {
+                            return false;
+                        }
+                    } else {
+                        var frm = obj.parents('form');
+                        if (frm && frm.length) {
+                            frm.submit();
+                        }
+                    }
+                }
+
                 return false;
             }
 
@@ -224,7 +241,6 @@
                         SetupStep(curStep, selStep, trigger);
                     });
                 } else if (options.transitionEffect == 'fade') {
-                    var hr = $(curStep, obj).attr("href");
                     $($(curStep, obj).attr("href"), obj).fadeOut("fast", function (e) {
                         $($(selStep, obj).attr("href"), obj).fadeIn("fast");
                         curStepIdx = stepIdx;
