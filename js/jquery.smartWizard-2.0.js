@@ -61,7 +61,7 @@
                   elmActionBar = $('<div></div>').addClass("actionBar");
                   elmStepContainer = $('<div></div>').addClass("stepContainer");
                   btNext = $('<a>'+options.labelNext+'</a>').attr("href","#").addClass("buttonNext");
-                  btPrevious = $('<a>'+options.labelPrevious+'</a>').attr("href","#").addClass("buttonPrevious");
+                  btPrevious = $('<a>' + options.labelPrevious + '</a>').attr("href", "#").addClass("buttonPrevious").css('display', options.includePreviousButton ? '' : 'none');
                   btFinish = $('<a>'+options.labelFinish+'</a>').attr("href","#").addClass("buttonFinish");
                   
                   // highlight steps with errors
@@ -113,6 +113,7 @@
                       return false;
                   }); 
                   
+				  if(options.directClick == true){
                   $(steps).bind("click", function(e){
                       if(steps.index(this) == curStepIdx){
                         return false;                    
@@ -124,7 +125,8 @@
                       }
                       return false;
                   }); 
-                  
+                  }
+				  
                   // Enable keyboard navigation                 
                   if(options.keyNavigation){
                       $(document).keyup(function(e){
@@ -324,23 +326,25 @@
  
     // Default Properties and Events
     $.fn.smartWizard.defaults = {
-          selected: 0,  // Selected Step, 0 = first step   
-          keyNavigation: true, // Enable/Disable key navigation(left and right keys are used if enabled)
-          enableAllSteps: false,
-          updateHeight: true,
-          transitionEffect: 'fade', // Effect on navigation, none/fade/slide/slideleft
-          contentURL:null, // content url, Enables Ajax content loading
-          contentCache:true, // cache step contents, if false content is fetched always from ajax url
-          cycleSteps: false, // cycle step navigation
-          includeFinishButton: true, // whether to show a Finish button
-          enableFinishButton: false, // make finish button enabled always
-          errorSteps:[],    // Array Steps with errors
-          labelNext:'Next',
-          labelPrevious:'Previous',
-          labelFinish:'Finish',          
-          onLeaveStep: null, // triggers when leaving a step
-          onShowStep: null,  // triggers when showing a step
-          onFinish: null  // triggers when Finish button is clicked
-    };    
+        selected: 0,  // Selected Step, 0 = first step   
+        keyNavigation: false, // Enable/Disable key navigation(left and right keys are used if enabled)
+        enableAllSteps: false,
+        updateHeight: true,
+        transitionEffect: 'fade', // Effect on navigation, none/fade/slide/slideleft
+        contentURL: null, // content url, Enables Ajax content loading
+        contentCache: true, // cache step contents, if false content is fetched always from ajax url
+        cycleSteps: false, // cycle step navigation
+        includeFinishButton: true, // whether to show a Finish button
+        enableFinishButton: false, // make finish button enabled always
+        errorSteps: [],    // Array Steps with errors
+        labelNext: 'Next',
+        labelPrevious: 'Previous',
+        labelFinish: 'Finish',
+        onLeaveStep: null, // triggers when leaving a step
+        onShowStep: null,  // triggers when showing a step
+        onFinish: null,  // triggers when Finish button is clicked
+        includePreviousButton: true, // enable/disable the previous button
+        directClick: true // enable/disable clicking the steps directly
+    }; 
     
 })(jQuery);
